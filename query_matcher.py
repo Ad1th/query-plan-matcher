@@ -43,6 +43,12 @@ def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
         op = "Sort"
         algo = "InMemorySort"
 
+    elif node_type == "Index Scan":
+        op = "Scan"
+        algo = "IndexScan"
+        relation = node.get("Relation Name")
+
+
     else:
         raise ValueError(f"Unsupported node type: {node_type}")
 
@@ -61,29 +67,29 @@ def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
     # print(node_type, op, algo, relation)
     
 
-plan_json = [
-  {
-    "Plan": {
-      "Node Type": "Sort",
-      "Plans": [
-        {
-          "Node Type": "HashAggregate",
-          "Plans": [
-            {
-              "Node Type": "Seq Scan",
-              "Relation Name": "lineitem"
-            }
-          ]
-        }
-      ]
-    }
-  }
-]
+# plan_json = [
+#   {
+#     "Plan": {
+#       "Node Type": "Sort",
+#       "Plans": [
+#         {
+#           "Node Type": "HashAggregate",
+#           "Plans": [
+#             {
+#               "Node Type": "Seq Scan",
+#               "Relation Name": "lineitem"
+#             }
+#           ]
+#         }
+#       ]
+#     }
+#   }
+# ]
 
-simplified = simplifier(plan_json[0])
+# simplified = simplifier(plan_json[0])
 
 
-pprint.pprint(simplified)
+# pprint.pprint(simplified)
 
 def plan_fingerprint(simplified_plan: dict) -> str:
     #Accept plan by F1
@@ -105,8 +111,8 @@ def plan_fingerprint(simplified_plan: dict) -> str:
     return fingerprint
    
 
-plan_fingerprint_value = plan_fingerprint(simplified)
-print("Plan Fingerprint:", plan_fingerprint_value)
+# plan_fingerprint_value = plan_fingerprint(simplified)
+# print("Plan Fingerprint:", plan_fingerprint_value)
 
 
 def matcher(fp1: str, fp2: str) -> bool:
@@ -116,3 +122,94 @@ def matcher(fp1: str, fp2: str) -> bool:
     #return equivalence result
 
     return fp1 == fp2
+
+
+
+
+SAMPLE_PLANS = {
+    1: {
+        "Plan": {
+            "Node Type": "Sort",
+            "Plans": [
+                {
+                    "Node Type": "HashAggregate",
+                    "Plans": [
+                        {
+                            "Node Type": "Seq Scan",
+                            "Relation Name": "lineitem"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    2: {
+        "Plan": {
+            "Node Type": "Sort",
+            "Plans": [
+                {
+                    "Node Type": "HashAggregate",
+                    "Plans": [
+                        {
+                            "Node Type": "Index Scan",
+                            "Relation Name": "lineitem"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    3: {
+        "Plan": {
+            "Node Type": "HashAggregate",
+            "Plans": [
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "lineitem"
+                }
+            ]
+        }
+    }
+}
+
+
+def run_menu():
+    print("\n=== Query Plan Matcher ===\n")
+    print("Available Plans:")
+    print("1. Seq Scan + HashAggregate + Sort")
+    print("2. Index Scan + HashAggregate + Sort")
+    print("3. Seq Scan + HashAggregate (No Sort)")
+    
+    p1 = int(input("\nSelect Plan 1 (1/2/3): "))
+    p2 = int(input("Select Plan 2 (1/2/3): "))
+
+    plan1 = SAMPLE_PLANS[p1]
+    plan2 = SAMPLE_PLANS[p2]
+
+    # F1
+    simplified_1 = simplifier(plan1)
+    simplified_2 = simplifier(plan2)
+
+    # F2
+    fp1 = plan_fingerprint(simplified_1)
+    fp2 = plan_fingerprint(simplified_2)
+
+    # F3
+    is_same = matcher(fp1, fp2)
+
+    print("\n--- Simplified Plan 1 ---")
+    pprint.pprint(simplified_1)
+
+    print("\n--- Simplified Plan 2 ---")
+    pprint.pprint(simplified_2)
+
+    print("\n--- Fingerprints ---")
+    print("Plan 1:", fp1)
+    print("Plan 2:", fp2)
+
+    print("\n--- Result ---")
+    print("Plans are equivalent?" , is_same)
+
+
+if __name__ == "__main__":
+    run_menu()
