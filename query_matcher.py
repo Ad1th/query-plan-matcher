@@ -1,5 +1,6 @@
 import json
-
+import pprint
+import hashlib
 
 
 def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
@@ -57,7 +58,7 @@ def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
         "relation": relation,
         "children": children
     }
-    print(node_type, op, algo, relation)
+    # print(node_type, op, algo, relation)
     
 
 plan_json = [
@@ -81,19 +82,37 @@ plan_json = [
 
 simplified = simplifier(plan_json[0])
 
-import pprint
+
 pprint.pprint(simplified)
 
-def plan_fingerprint(simplified_plan: dict):
+def plan_fingerprint(simplified_plan: dict) -> str:
     #Accept plan by F1
     #Serialize plan in a consistent and deterministic order
     #Generate a hash of the serialized plan
     #return the hash as fingerprint of the plan
-    pass
 
-def matcher(fp1,fp2):
+
+    # Step 1: deterministic serialization
+    serialized = json.dumps(
+        simplified_plan,
+        sort_keys=True,
+        separators=(",", ":")
+    )
+    # return serialized
+    # Step 2: generate hash
+    hash_object = hashlib.sha256(serialized.encode())
+    fingerprint = hash_object.hexdigest()
+    return fingerprint
+   
+
+plan_fingerprint_value = plan_fingerprint(simplified)
+print("Plan Fingerprint:", plan_fingerprint_value)
+
+
+def matcher(fp1: str, fp2: str) -> bool:
     #Accept fingerprint of current plan
     #Compare the 2 fingerprint values
     #if fingerprints are equal, classify plans as equivalent, else different
     #return equivalence result
-    pass
+
+    return fp1 == fp2
