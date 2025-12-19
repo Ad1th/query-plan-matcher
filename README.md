@@ -96,31 +96,3 @@ Plan 2: 7a5c... (sha256 hex)
 Plans are equivalent? False
 ```
 
-## Extending and Notes
-
-- Add support for more Postgres `Node Type` values by extending the mapping logic in `simplifier`.
-- Consider adding JSON file input and a CLI argument parser (argparse or click) to compare saved EXPLAIN outputs instead of the interactive menu.
-- Add unit tests for `simplifier` behaviour for different node shapes and for fingerprint stability.
-
-## Development
-
-Run the demo locally as shown above. To run quick checks, import functions in a Python REPL and call them with sample or real EXPLAIN JSON.
-
-Suggested next steps:
-
-1. Add unit tests (pytest) and a continuous integration workflow.
-2. Add support for additional plan node types and plan normalization rules (e.g. ignore cost/rows/stats fields when building the canonical representation).
-3. Add an option to canonicalize minor differences such as join order or commutative operator ordering if desired for higher-level matching.
-
-## License & Contribution
-
-Feel free to fork and open PRs. Add a LICENSE file if you want to specify a license.
-
----
-
-If you'd like, I can also:
-
-- Add a small test suite (pytest) demonstrating expected outputs for the sample plans.
-- Wire a simple argparse-driven CLI to accept JSON files or strings.
-
-Tell me which of these you'd prefer next.
