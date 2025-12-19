@@ -1,0 +1,4 @@
+# No external Python packages required — this project uses the Python standard library only.
+# Recommended Python version: 3.8+
+# If you want to pin an interpreter for tooling, use e.g.:
+# python_version>=3.8
