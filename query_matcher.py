@@ -1,38 +1,45 @@
 import json
-import pprint
 import hashlib
+import pprint
+from typing import Dict, Any
 
 
-def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
-    #receive JSON
-    #Identify Root operation
-    #Decide the kind of operation
-    #Decide how operation is executed (kind of algo)
-    #extract relation name if scan, else null
-    #remove unnecessary details
-    #identify child operators
-    #construct simplified tree of query plan
-    #return simplified JSON
 
-    # Step 1: unwrap Postgres EXPLAIN JSON if needed
-    if "Plan" in plan_json:
-        node = plan_json["Plan"]
-    else:
-        node = plan_json
+# F1: Plan Simplification
 
-    # Step 2: identify raw operator type
+def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Simplifies a PostgreSQL EXPLAIN (FORMAT JSON) query plan into a
+    canonical, engine-agnostic representation.
+
+    Canonical node format:
+    {
+        "op": <logical operator>,
+        "algo": <physical algorithm>,
+        "relation": <table name or None>,
+        "children": [<child nodes>]
+    }
+    """
+
+    # Unwrap top-level Postgres EXPLAIN JSON if present
+    node = plan_json["Plan"] if "Plan" in plan_json else plan_json
+
     node_type = node.get("Node Type")
 
-    # Canonical fields
     op = None
     algo = None
     relation = None
     children = []
 
-    # Step 3: map raw operator to canonical op and algo
+    # Map PostgreSQL node types to canonical operators
     if node_type == "Seq Scan":
         op = "Scan"
         algo = "SeqScan"
+        relation = node.get("Relation Name")
+
+    elif node_type == "Index Scan":
+        op = "Scan"
+        algo = "IndexScan"
         relation = node.get("Relation Name")
 
     elif node_type == "HashAggregate":
@@ -43,88 +50,54 @@ def simplifier(plan_json: dict) -> dict: #ensuring input is a dictionary
         op = "Sort"
         algo = "InMemorySort"
 
-    elif node_type == "Index Scan":
-        op = "Scan"
-        algo = "IndexScan"
-        relation = node.get("Relation Name")
-
-
     else:
         raise ValueError(f"Unsupported node type: {node_type}")
 
-    # Step 4: identify and process child operators
-    if "Plans" in node:
-        for child in node["Plans"]:
-            children.append(simplifier(child))
+    # Recursively process child plan nodes
+    for child in node.get("Plans", []):
+        children.append(simplifier(child))
 
-    # Step 5: construct and return canonical node
     return {
         "op": op,
         "algo": algo,
         "relation": relation,
         "children": children
     }
-    # print(node_type, op, algo, relation)
-    
-
-# plan_json = [
-#   {
-#     "Plan": {
-#       "Node Type": "Sort",
-#       "Plans": [
-#         {
-#           "Node Type": "HashAggregate",
-#           "Plans": [
-#             {
-#               "Node Type": "Seq Scan",
-#               "Relation Name": "lineitem"
-#             }
-#           ]
-#         }
-#       ]
-#     }
-#   }
-# ]
-
-# simplified = simplifier(plan_json[0])
 
 
-# pprint.pprint(simplified)
-
-def plan_fingerprint(simplified_plan: dict) -> str:
-    #Accept plan by F1
-    #Serialize plan in a consistent and deterministic order
-    #Generate a hash of the serialized plan
-    #return the hash as fingerprint of the plan
 
 
-    # Step 1: deterministic serialization
+# F2: Plan Fingerprinting
+
+def plan_fingerprint(simplified_plan: Dict[str, Any]) -> str:
+    """
+    Generates a deterministic fingerprint for a canonical query plan
+    by hashing its serialized JSON representation.
+    """
+
     serialized = json.dumps(
         simplified_plan,
         sort_keys=True,
         separators=(",", ":")
     )
-    # return serialized
-    # Step 2: generate hash
-    hash_object = hashlib.sha256(serialized.encode())
-    fingerprint = hash_object.hexdigest()
-    return fingerprint
-   
 
-# plan_fingerprint_value = plan_fingerprint(simplified)
-# print("Plan Fingerprint:", plan_fingerprint_value)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
+
+
+
+
+# F3: Plan Matching
 
 def matcher(fp1: str, fp2: str) -> bool:
-    #Accept fingerprint of current plan
-    #Compare the 2 fingerprint values
-    #if fingerprints are equal, classify plans as equivalent, else different
-    #return equivalence result
-
+    """
+    Compares two plan fingerprints and determines equivalence.
+    """
     return fp1 == fp2
 
 
 
+# Sample Plans (for testing)
 
 SAMPLE_PLANS = {
     1: {
@@ -173,13 +146,17 @@ SAMPLE_PLANS = {
 }
 
 
+
+
+# CLI Driver
+
 def run_menu():
     print("\n=== Query Plan Matcher ===\n")
     print("Available Plans:")
     print("1. Seq Scan + HashAggregate + Sort")
     print("2. Index Scan + HashAggregate + Sort")
     print("3. Seq Scan + HashAggregate (No Sort)")
-    
+
     p1 = int(input("\nSelect Plan 1 (1/2/3): "))
     p2 = int(input("Select Plan 2 (1/2/3): "))
 
@@ -208,10 +185,8 @@ def run_menu():
     print("Plan 2:", fp2)
 
     print("\n--- Result ---")
-    print("Plans are equivalent?" , is_same)
+    print("Plans are equivalent?", is_same)
 
 
 if __name__ == "__main__":
     run_menu()
-
-
