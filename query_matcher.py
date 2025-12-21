@@ -49,7 +49,7 @@ def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
     elif node_type == "Sort":
         op = "Sort"
         algo = "InMemorySort"
-        
+
     elif node_type == "Hash Join":
         op = "Join"
         algo = "HashJoin"
@@ -109,9 +109,12 @@ def matcher(fp1: str, fp2: str) -> bool:
 
 
 
-# Sample Plans (for testing)
-
 SAMPLE_PLANS = {
+
+    # ----------------------------
+    # No-join plans (baseline)
+    # ----------------------------
+
     1: {
         "Plan": {
             "Node Type": "Sort",
@@ -128,6 +131,7 @@ SAMPLE_PLANS = {
             ]
         }
     },
+
     2: {
         "Plan": {
             "Node Type": "Sort",
@@ -144,13 +148,83 @@ SAMPLE_PLANS = {
             ]
         }
     },
+
+    # ----------------------------
+    # Simple join plans
+    # ----------------------------
+
     3: {
+        "Plan": {
+            "Node Type": "Hash Join",
+            "Plans": [
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "orders"
+                },
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "lineitem"
+                }
+            ]
+        }
+    },
+
+    4: {
+        "Plan": {
+            "Node Type": "Nested Loop",
+            "Plans": [
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "orders"
+                },
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "lineitem"
+                }
+            ]
+        }
+    },
+
+    # ----------------------------
+    # Join with aggregation
+    # ----------------------------
+
+    5: {
         "Plan": {
             "Node Type": "HashAggregate",
             "Plans": [
                 {
+                    "Node Type": "Hash Join",
+                    "Plans": [
+                        {
+                            "Node Type": "Seq Scan",
+                            "Relation Name": "orders"
+                        },
+                        {
+                            "Node Type": "Seq Scan",
+                            "Relation Name": "lineitem"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+
+    # ----------------------------
+    # Join order variation
+    # ----------------------------
+
+    6: {
+        "Plan": {
+            "Node Type": "Hash Join",
+            "Plans": [
+                {
                     "Node Type": "Seq Scan",
                     "Relation Name": "lineitem"
+                },
+                {
+                    "Node Type": "Seq Scan",
+                    "Relation Name": "orders"
                 }
             ]
         }
@@ -167,10 +241,13 @@ def run_menu():
     print("Available Plans:")
     print("1. Seq Scan + HashAggregate + Sort")
     print("2. Index Scan + HashAggregate + Sort")
-    print("3. Seq Scan + HashAggregate (No Sort)")
+    print("3. Hash Join (orders ⋈ lineitem)")
+    print("4. Nested Loop Join (orders ⋈ lineitem)")
+    print("5. Hash Join + Aggregate")
+    print("6. Hash Join with reversed join order")
 
-    p1 = int(input("\nSelect Plan 1 (1/2/3): "))
-    p2 = int(input("Select Plan 2 (1/2/3): "))
+    p1 = int(input("\nSelect Plan 1 (1/2/3/4/5/6): "))
+    p2 = int(input("Select Plan 2 (1/2/3/4/5/6): "))
 
     plan1 = SAMPLE_PLANS[p1]
     plan2 = SAMPLE_PLANS[p2]
