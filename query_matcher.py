@@ -4,6 +4,22 @@ import pprint
 from typing import Dict, Any
 
 
+OPERATOR_MAP = {
+    # Scans
+    "Seq Scan": ("Scan", "SeqScan"),
+    "Index Scan": ("Scan", "IndexScan"),
+
+    # Aggregation
+    "HashAggregate": ("Aggregate", "HashAggregate"),
+
+    # Sorting
+    "Sort": ("Sort", "InMemorySort"),
+
+    # Joins
+    "Hash Join": ("Join", "HashJoin"),
+    "Nested Loop": ("Join", "NestedLoop"),
+    "Merge Join": ("Join", "MergeJoin"),
+}
 
 # F1: Plan Simplification
 
@@ -31,44 +47,18 @@ def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
     relation = None
     children = []
 
-    # Map PostgreSQL node types to canonical operators
-    if node_type == "Seq Scan":
-        op = "Scan"
-        algo = "SeqScan"
-        relation = node.get("Relation Name")
+        # Step 3: map raw operator to canonical op and algo
+    if node_type in OPERATOR_MAP:
+        op, algo = OPERATOR_MAP[node_type]
 
-    elif node_type == "Index Scan":
-        op = "Scan"
-        algo = "IndexScan"
-        relation = node.get("Relation Name")
+        # Extract relation name only for scan operators
+        if op == "Scan":
+            relation = node.get("Relation Name")
 
-    elif node_type == "HashAggregate":
-        op = "Aggregate"
-        algo = "HashAggregate"
-
-    elif node_type == "Sort":
-        op = "Sort"
-        algo = "InMemorySort"
-
-    elif node_type == "Hash Join":
-        op = "Join"
-        algo = "HashJoin"
-
-    elif node_type == "Nested Loop":
-        op = "Join"
-        algo = "NestedLoop"
-
-    elif node_type == "Merge Join":
-        op = "Join"
-        algo = "MergeJoin"   
-    
     else:
         # Fallback for unsupported operators
         op = "Unknown"
         algo = node_type
-
-    # else:
-    #     raise ValueError(f"Unsupported node type: {node_type}")
 
     # Recursively process child plan nodes
     for child in node.get("Plans", []):
