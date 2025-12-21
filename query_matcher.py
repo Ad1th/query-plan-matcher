@@ -61,9 +61,14 @@ def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
     elif node_type == "Merge Join":
         op = "Join"
         algo = "MergeJoin"   
-
+    
     else:
-        raise ValueError(f"Unsupported node type: {node_type}")
+        # Fallback for unsupported operators
+        op = "Unknown"
+        algo = node_type
+
+    # else:
+    #     raise ValueError(f"Unsupported node type: {node_type}")
 
     # Recursively process child plan nodes
     for child in node.get("Plans", []):
