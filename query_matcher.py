@@ -49,6 +49,18 @@ def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
     elif node_type == "Sort":
         op = "Sort"
         algo = "InMemorySort"
+        
+    elif node_type == "Hash Join":
+        op = "Join"
+        algo = "HashJoin"
+
+    elif node_type == "Nested Loop":
+        op = "Join"
+        algo = "NestedLoop"
+
+    elif node_type == "Merge Join":
+        op = "Join"
+        algo = "MergeJoin"   
 
     else:
         raise ValueError(f"Unsupported node type: {node_type}")
