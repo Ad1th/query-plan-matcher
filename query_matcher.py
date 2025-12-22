@@ -279,7 +279,7 @@ def print_comparison(result: dict):
 
 if __name__ == "__main__":
     plan_a = p_x["plan"]
-    plan_b = p_y["plan"]
+    plan_b = p_z["plan"]
 
     result = compare_plans(plan_a, plan_b)
     print_comparison(result)
@@ -294,9 +294,9 @@ if __name__ == "__main__":
     pprint.pprint(stats)
 
     print("\n\nDetailed Plan B Stats:")
-    runtime = extractRuntime(p_y["plan"])
+    runtime = extractRuntime(p_z["plan"])
     print("Execution Runtime (ms):", runtime)
 
-    stats = extractFilterStats(p_y["plan"])
+    stats = extractFilterStats(p_z["plan"])
     print("Filter stats:")
     pprint.pprint(stats)
