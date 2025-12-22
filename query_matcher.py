@@ -106,9 +106,7 @@ def plan_fingerprint(simplified_plan: Dict[str, Any]) -> str:
 
 
 
-
 # F3: Plan Matching
-
 def matcher(fp1: str, fp2: str) -> bool:
     """
     Compares two plan fingerprints and determines equivalence.
@@ -116,131 +114,7 @@ def matcher(fp1: str, fp2: str) -> bool:
     return fp1 == fp2
 
 
-
-SAMPLE_PLANS = {
-
-    # ----------------------------
-    # No-join plans (baseline)
-    # ----------------------------
-
-    1: {
-        "Plan": {
-            "Node Type": "Sort",
-            "Plans": [
-                {
-                    "Node Type": "HashAggregate",
-                    "Plans": [
-                        {
-                            "Node Type": "Seq Scan",
-                            "Relation Name": "lineitem"
-                        }
-                    ]
-                }
-            ]
-        }
-    },
-    
-    
-
-    2: {
-        "Plan": {
-            "Node Type": "Sort",
-            "Plans": [
-                {
-                    "Node Type": "HashAggregate",
-                    "Plans": [
-                        {
-                            "Node Type": "Index Scan",
-                            "Relation Name": "lineitem"
-                        }
-                    ]
-                }
-            ]
-        }
-    },
-
-    # ----------------------------
-    # Simple join plans
-    # ----------------------------
-
-    3: {
-        "Plan": {
-            "Node Type": "Hash Join",
-            "Plans": [
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "orders"
-                },
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "lineitem"
-                }
-            ]
-        }
-    },
-
-    4: {
-        "Plan": {
-            "Node Type": "Nested Loop",
-            "Plans": [
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "orders"
-                },
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "lineitem"
-                }
-            ]
-        }
-    },
-
-    # ----------------------------
-    # Join with aggregation
-    # ----------------------------
-
-    5: {
-        "Plan": {
-            "Node Type": "HashAggregate",
-            "Plans": [
-                {
-                    "Node Type": "Hash Join",
-                    "Plans": [
-                        {
-                            "Node Type": "Seq Scan",
-                            "Relation Name": "orders"
-                        },
-                        {
-                            "Node Type": "Seq Scan",
-                            "Relation Name": "lineitem"
-                        }
-                    ]
-                }
-            ]
-        }
-    },
-
-    # ----------------------------
-    # Join order variation
-    # ----------------------------
-
-    6: {
-        "Plan": {
-            "Node Type": "Hash Join",
-            "Plans": [
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "lineitem"
-                },
-                {
-                    "Node Type": "Seq Scan",
-                    "Relation Name": "orders"
-                }
-            ]
-        }
-    }
-}
-
+# Sample plan for testing
 p_x={"day":1,"cutoff_date":"1992-01-03","started_at":"2025-09-29 14:50:01,3N","finished_at":"2025-09-29 14:50:02,3N","plan":[  {    "Plan": {      "Node Type": "Aggregate",      "Strategy": "Sorted",      "Partial Mode": "Finalize",      "Parallel Aware": "false",      "Async Capable": "false",      "Startup Cost": 144867.61,      "Total Cost": 144878.91,      "Plan Rows": 6,      "Plan Width": 236,      "Actual Startup Time": 595.333,      "Actual Total Time": 595.902,      "Actual Rows": 2,      "Actual Loops": 1,      "Group Key": ["l_returnflag", "l_linestatus"],      "Shared Hit Blocks": 208,      "Shared Read Blocks": 112504,      "Shared Dirtied Blocks": 0,      "Shared Written Blocks": 0,      "Local Hit Blocks": 0,      "Local Read Blocks": 0,      "Local Dirtied Blocks": 0,      "Local Written Blocks": 0,      "Temp Read Blocks": 0,      "Temp Written Blocks": 0,      "Plans": [        {          "Node Type": "Gather Merge",          "Parent Relationship": "Outer",          "Parallel Aware": "false",          "Async Capable": "false",          "Startup Cost": 144867.61,          "Total Cost": 144878.36,          "Plan Rows": 12,          "Plan Width": 236,          "Actual Startup Time": 595.295,          "Actual Total Time": 595.868,          "Actual Rows": 6,          "Actual Loops": 1,          "Workers Planned": 2,          "Workers Launched": 2,          "Shared Hit Blocks": 208,          "Shared Read Blocks": 112504,          "Shared Dirtied Blocks": 0,          "Shared Written Blocks": 0,          "Local Hit Blocks": 0,          "Local Read Blocks": 0,          "Local Dirtied Blocks": 0,          "Local Written Blocks": 0,          "Temp Read Blocks": 0,          "Temp Written Blocks": 0,          "Plans": [            {              "Node Type": "Aggregate",              "Strategy": "Sorted",              "Partial Mode": "Partial",              "Parent Relationship": "Outer",              "Parallel Aware": "false",              "Async Capable": "false",              "Startup Cost": 143867.59,              "Total Cost": 143876.95,              "Plan Rows": 6,              "Plan Width": 236,              "Actual Startup Time": 592.593,              "Actual Total Time": 592.601,              "Actual Rows": 2,              "Actual Loops": 3,              "Group Key": ["l_returnflag", "l_linestatus"],              "Shared Hit Blocks": 208,              "Shared Read Blocks": 112504,              "Shared Dirtied Blocks": 0,              "Shared Written Blocks": 0,              "Local Hit Blocks": 0,              "Local Read Blocks": 0,              "Local Dirtied Blocks": 0,              "Local Written Blocks": 0,              "Temp Read Blocks": 0,              "Temp Written Blocks": 0,              "Workers": [              ],              "Plans": [                {                  "Node Type": "Sort",                  "Parent Relationship": "Outer",                  "Parallel Aware": "false",                  "Async Capable": "false",                  "Startup Cost": 143867.59,                  "Total Cost": 143868.20,                  "Plan Rows": 246,                  "Plan Width": 25,                  "Actual Startup Time": 592.578,                  "Actual Total Time": 592.578,                  "Actual Rows": 19,                  "Actual Loops": 3,                  "Sort Key": ["l_returnflag", "l_linestatus"],                  "Sort Method": "quicksort",                  "Sort Space Used": 26,                  "Sort Space Type": "Memory",                  "Shared Hit Blocks": 208,                  "Shared Read Blocks": 112504,                  "Shared Dirtied Blocks": 0,                  "Shared Written Blocks": 0,                  "Local Hit Blocks": 0,                  "Local Read Blocks": 0,                  "Local Dirtied Blocks": 0,                  "Local Written Blocks": 0,                  "Temp Read Blocks": 0,                  "Temp Written Blocks": 0,                  "Workers": [                    {                      "Worker Number": 0,                      "Sort Method": "quicksort",                      "Sort Space Used": 25,                      "Sort Space Type": "Memory"                    },                    {                      "Worker Number": 1,                      "Sort Method": "quicksort",                      "Sort Space Used": 25,                      "Sort Space Type": "Memory"                    }                  ],                  "Plans": [                    {                      "Node Type": "Seq Scan",                      "Parent Relationship": "Outer",                      "Parallel Aware": "true",                      "Async Capable": "false",                      "Relation Name": "lineitem",                      "Alias": "lineitem",                      "Startup Cost": 0.00,                      "Total Cost": 143857.82,                      "Plan Rows": 246,                      "Plan Width": 25,                      "Actual Startup Time": 25.821,                      "Actual Total Time": 592.493,                      "Actual Rows": 19,                      "Actual Loops": 3,                      "Filter": "(l_shipdate <= '1992-01-03'::date)",                      "Rows Removed by Filter": 2000386,                      "Shared Hit Blocks": 96,                      "Shared Read Blocks": 112504,                      "Shared Dirtied Blocks": 0,                      "Shared Written Blocks": 0,                      "Local Hit Blocks": 0,                      "Local Read Blocks": 0,                      "Local Dirtied Blocks": 0,                      "Local Written Blocks": 0,                      "Temp Read Blocks": 0,                      "Temp Written Blocks": 0,                      "Workers": [                      ]                    }                  ]                }              ]            }          ]        }      ]    },    "Planning": {      "Shared Hit Blocks": 102,      "Shared Read Blocks": 9,      "Shared Dirtied Blocks": 0,      "Shared Written Blocks": 0,      "Local Hit Blocks": 0,      "Local Read Blocks": 0,      "Local Dirtied Blocks": 0,      "Local Written Blocks": 0,      "Temp Read Blocks": 0,      "Temp Written Blocks": 0    },    "Planning Time": 1.420,    "Triggers": [    ],    "Execution Time": 595.961  }]}
 
 
