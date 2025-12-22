@@ -80,8 +80,12 @@ def normalizePlan(plan_json:dict)->dict:
             #this normalises the plan and takes care of children if necessary
             if key == "Plans" and isinstance(value, list):
                 normalized["Plans"] = [normalize_node(child) for child in value]
+                
             else:
-                normalized[key] = value
+                if isinstance(value, str) and value.lower() in {"true", "false"}: #normalized boolean values to strings, night also have to add for float and integer if needed
+                    normalized[key] = value.lower() == "true"  
+                else:
+                    normalized[key] = value
         return normalized
     
     return normalize_node(node)
