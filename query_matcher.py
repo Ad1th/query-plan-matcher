@@ -4,72 +4,138 @@ import pprint
 from typing import Dict, Any
 
 
-OPERATOR_MAP = {
-    # Scans
-    "Seq Scan": ("Scan", "SeqScan"),
-    "Index Scan": ("Scan", "IndexScan"),
+#Removing fields that we know is noise and differs execution to execution
+DENY_KEYS = {
+    # Timing & execution stats
+    "Actual Startup Time",
+    "Actual Total Time",
+    "Actual Rows",
+    "Actual Loops",
+    "Execution Time",
+    "Planning Time",
 
-    # Aggregation
-    "HashAggregate": ("Aggregate", "HashAggregate"),
+    # Cost estimates
+    "Startup Cost",
+    "Total Cost",
+    "Plan Rows",
+    "Plan Width",
 
-    # Sorting
-    "Sort": ("Sort", "InMemorySort"),
+    # Buffer / I/O stats
+    "Shared Hit Blocks",
+    "Shared Read Blocks",
+    "Shared Dirtied Blocks",
+    "Shared Written Blocks",
+    "Local Hit Blocks",
+    "Local Read Blocks",
+    "Local Dirtied Blocks",
+    "Local Written Blocks",
+    "Temp Read Blocks",
+    "Temp Written Blocks",
 
-    # Joins
-    "Hash Join": ("Join", "HashJoin"),
-    "Nested Loop": ("Join", "NestedLoop"),
-    "Merge Join": ("Join", "MergeJoin"),
+    # Parallel / worker info
+    "Workers",
+    "Workers Planned",
+    "Workers Launched",
+
+    # Misc metadata
+    "Parent Relationship",
+    "Async Capable",
+
+    # Sort / runtime internals
+"Sort Method",
+"Sort Space Used",
+"Sort Space Type",
+
+# Runtime-dependent selectivity counters
+"Rows Removed by Filter",
 }
 
-# F1: Plan Simplification
 
-def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
+def normalizePlan(plan_json:dict)->dict:
     """
-    Simplifies a PostgreSQL EXPLAIN (FORMAT JSON) query plan into a
-    canonical, engine-agnostic representation.
-
-    Canonical node format:
-    {
-        "op": <logical operator>,
-        "algo": <physical algorithm>,
-        "relation": <table name or None>,
-        "children": [<child nodes>]
-    }
+    Docstring for normalizePlan
+    
+    :param plan_json: Here we normalize a postgreSQL plan (EXPLAIN ANALYZE, FORMAT JSON) by remove all those fields in the 
+    JSON that are run-specific or change after every run and are not unique to the query & data.
+    Runtime data and runtime summaries are intentionally ignored.
+    :type plan_json: dict
+    :return: dictionary which is normalized after removing noise
+    :rtype: dict
     """
-
-    # Unwrap top-level Postgres EXPLAIN JSON if present
-    node = plan_json["Plan"] if "Plan" in plan_json else plan_json
-
-    node_type = node.get("Node Type")
-
-    op = None
-    algo = None
-    relation = None
-    children = []
-
-        # Step 3: map raw operator to canonical op and algo
-    if node_type in OPERATOR_MAP:
-        op, algo = OPERATOR_MAP[node_type]
-
-        # Extract relation name only for scan operators
-        if op == "Scan":
-            relation = node.get("Relation Name")
-
+    #first we unwrap instance if needed, else if it is one json of a plan, we continue
+    if isinstance(plan_json, list):
+        plan_json = plan_json[0]
+    
+    if "Plan" in plan_json:
+        node = plan_json["Plan"]
     else:
-        # Fallback for unsupported operators
-        op = "Unknown"
-        algo = node_type
+        node = plan_json
+    
+    #remove deny keys, by adding a subfunction (if not so efficient, will find another approach)
+    def normalize_node(node:dict)->dict:
+        normalized = {}
+        for key, value in node.items():
+            if key in DENY_KEYS:
+                continue
+            #this normalises the plan and takes care of children if necessary
+            if key == "Plans" and isinstance(value, list):
+                normalized["Plans"] = [normalize_node(child) for child in value]
+            else:
+                normalized[key] = value
+        return normalized
+    
+    return normalize_node(node)
 
-    # Recursively process child plan nodes
-    for child in node.get("Plans", []):
-        children.append(simplifier(child))
 
-    return {
-        "op": op,
-        "algo": algo,
-        "relation": relation,
-        "children": children
-    }
+    
+# F1: Plan Simplification
+# def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
+#     """
+#     Simplifies a PostgreSQL EXPLAIN (FORMAT JSON) query plan into a
+#     canonical, engine-agnostic representation.
+
+#     Canonical node format:
+#     {
+#         "op": <logical operator>,
+#         "algo": <physical algorithm>,
+#         "relation": <table name or None>,
+#         "children": [<child nodes>]
+#     }
+#     """
+
+#     # Unwrap top-level Postgres EXPLAIN JSON if present
+#     node = plan_json["Plan"] if "Plan" in plan_json else plan_json
+
+#     node_type = node.get("Node Type")
+
+#     op = None
+#     algo = None
+#     relation = None
+#     children = []
+
+#         # Step 3: map raw operator to canonical op and algo
+#     if node_type in OPERATOR_MAP:
+#         op, algo = OPERATOR_MAP[node_type]
+
+#         # Extract relation name only for scan operators
+#         if op == "Scan":
+#             relation = node.get("Relation Name")
+
+#     else:
+#         # Fallback for unsupported operators
+#         op = "Unknown"
+#         algo = node_type
+
+#     # Recursively process child plan nodes
+#     for child in node.get("Plans", []):
+#         children.append(simplifier(child))
+
+#     return {
+#         "op": op,
+#         "algo": algo,
+#         "relation": relation,
+#         "children": children
+#     }
 
 
 
@@ -126,6 +192,8 @@ SAMPLE_PLANS = {
             ]
         }
     },
+    
+    
 
     2: {
         "Plan": {
@@ -226,50 +294,24 @@ SAMPLE_PLANS = {
     }
 }
 
-
+p_x={"day":1,"cutoff_date":"1992-01-03","started_at":"2025-09-29 14:50:01,3N","finished_at":"2025-09-29 14:50:02,3N","plan":[  {    "Plan": {      "Node Type": "Aggregate",      "Strategy": "Sorted",      "Partial Mode": "Finalize",      "Parallel Aware": "false",      "Async Capable": "false",      "Startup Cost": 144867.61,      "Total Cost": 144878.91,      "Plan Rows": 6,      "Plan Width": 236,      "Actual Startup Time": 595.333,      "Actual Total Time": 595.902,      "Actual Rows": 2,      "Actual Loops": 1,      "Group Key": ["l_returnflag", "l_linestatus"],      "Shared Hit Blocks": 208,      "Shared Read Blocks": 112504,      "Shared Dirtied Blocks": 0,      "Shared Written Blocks": 0,      "Local Hit Blocks": 0,      "Local Read Blocks": 0,      "Local Dirtied Blocks": 0,      "Local Written Blocks": 0,      "Temp Read Blocks": 0,      "Temp Written Blocks": 0,      "Plans": [        {          "Node Type": "Gather Merge",          "Parent Relationship": "Outer",          "Parallel Aware": "false",          "Async Capable": "false",          "Startup Cost": 144867.61,          "Total Cost": 144878.36,          "Plan Rows": 12,          "Plan Width": 236,          "Actual Startup Time": 595.295,          "Actual Total Time": 595.868,          "Actual Rows": 6,          "Actual Loops": 1,          "Workers Planned": 2,          "Workers Launched": 2,          "Shared Hit Blocks": 208,          "Shared Read Blocks": 112504,          "Shared Dirtied Blocks": 0,          "Shared Written Blocks": 0,          "Local Hit Blocks": 0,          "Local Read Blocks": 0,          "Local Dirtied Blocks": 0,          "Local Written Blocks": 0,          "Temp Read Blocks": 0,          "Temp Written Blocks": 0,          "Plans": [            {              "Node Type": "Aggregate",              "Strategy": "Sorted",              "Partial Mode": "Partial",              "Parent Relationship": "Outer",              "Parallel Aware": "false",              "Async Capable": "false",              "Startup Cost": 143867.59,              "Total Cost": 143876.95,              "Plan Rows": 6,              "Plan Width": 236,              "Actual Startup Time": 592.593,              "Actual Total Time": 592.601,              "Actual Rows": 2,              "Actual Loops": 3,              "Group Key": ["l_returnflag", "l_linestatus"],              "Shared Hit Blocks": 208,              "Shared Read Blocks": 112504,              "Shared Dirtied Blocks": 0,              "Shared Written Blocks": 0,              "Local Hit Blocks": 0,              "Local Read Blocks": 0,              "Local Dirtied Blocks": 0,              "Local Written Blocks": 0,              "Temp Read Blocks": 0,              "Temp Written Blocks": 0,              "Workers": [              ],              "Plans": [                {                  "Node Type": "Sort",                  "Parent Relationship": "Outer",                  "Parallel Aware": "false",                  "Async Capable": "false",                  "Startup Cost": 143867.59,                  "Total Cost": 143868.20,                  "Plan Rows": 246,                  "Plan Width": 25,                  "Actual Startup Time": 592.578,                  "Actual Total Time": 592.578,                  "Actual Rows": 19,                  "Actual Loops": 3,                  "Sort Key": ["l_returnflag", "l_linestatus"],                  "Sort Method": "quicksort",                  "Sort Space Used": 26,                  "Sort Space Type": "Memory",                  "Shared Hit Blocks": 208,                  "Shared Read Blocks": 112504,                  "Shared Dirtied Blocks": 0,                  "Shared Written Blocks": 0,                  "Local Hit Blocks": 0,                  "Local Read Blocks": 0,                  "Local Dirtied Blocks": 0,                  "Local Written Blocks": 0,                  "Temp Read Blocks": 0,                  "Temp Written Blocks": 0,                  "Workers": [                    {                      "Worker Number": 0,                      "Sort Method": "quicksort",                      "Sort Space Used": 25,                      "Sort Space Type": "Memory"                    },                    {                      "Worker Number": 1,                      "Sort Method": "quicksort",                      "Sort Space Used": 25,                      "Sort Space Type": "Memory"                    }                  ],                  "Plans": [                    {                      "Node Type": "Seq Scan",                      "Parent Relationship": "Outer",                      "Parallel Aware": "true",                      "Async Capable": "false",                      "Relation Name": "lineitem",                      "Alias": "lineitem",                      "Startup Cost": 0.00,                      "Total Cost": 143857.82,                      "Plan Rows": 246,                      "Plan Width": 25,                      "Actual Startup Time": 25.821,                      "Actual Total Time": 592.493,                      "Actual Rows": 19,                      "Actual Loops": 3,                      "Filter": "(l_shipdate <= '1992-01-03'::date)",                      "Rows Removed by Filter": 2000386,                      "Shared Hit Blocks": 96,                      "Shared Read Blocks": 112504,                      "Shared Dirtied Blocks": 0,                      "Shared Written Blocks": 0,                      "Local Hit Blocks": 0,                      "Local Read Blocks": 0,                      "Local Dirtied Blocks": 0,                      "Local Written Blocks": 0,                      "Temp Read Blocks": 0,                      "Temp Written Blocks": 0,                      "Workers": [                      ]                    }                  ]                }              ]            }          ]        }      ]    },    "Planning": {      "Shared Hit Blocks": 102,      "Shared Read Blocks": 9,      "Shared Dirtied Blocks": 0,      "Shared Written Blocks": 0,      "Local Hit Blocks": 0,      "Local Read Blocks": 0,      "Local Dirtied Blocks": 0,      "Local Written Blocks": 0,      "Temp Read Blocks": 0,      "Temp Written Blocks": 0    },    "Planning Time": 1.420,    "Triggers": [    ],    "Execution Time": 595.961  }]}
 
 
 # CLI Driver
 
 def run_menu():
-    print("\n=== Query Plan Matcher ===\n")
-    print("Available Plans:")
-    print("1. Seq Scan + HashAggregate + Sort")
-    print("2. Index Scan + HashAggregate + Sort")
-    print("3. Hash Join (orders ⋈ lineitem)")
-    print("4. Nested Loop Join (orders ⋈ lineitem)")
-    print("5. Hash Join + Aggregate")
-    print("6. Hash Join with reversed join order")
-
-    p1 = int(input("\nSelect Plan 1 (1/2/3/4/5/6): "))
-    p2 = int(input("Select Plan 2 (1/2/3/4/5/6): "))
-
-    plan1 = SAMPLE_PLANS[p1]
-    plan2 = SAMPLE_PLANS[p2]
-
-    # F1
-    simplified_1 = simplifier(plan1)
-    simplified_2 = simplifier(plan2)
-
-    # F2
-    fp1 = plan_fingerprint(simplified_1)
-    fp2 = plan_fingerprint(simplified_2)
-
-    # F3
-    is_same = matcher(fp1, fp2)
-
-    print("\n--- Simplified Plan 1 ---")
-    pprint.pprint(simplified_1)
-
-    print("\n--- Simplified Plan 2 ---")
-    pprint.pprint(simplified_2)
-
-    print("\n--- Fingerprints ---")
-    print("Plan 1:", fp1)
-    print("Plan 2:", fp2)
-
-    print("\n--- Result ---")
-    print("Plans are equivalent?", is_same)
+    plan3 = p_x["plan"]
+    simplified_3 = normalizePlan(plan3)
+    # fp3 = plan_fingerprint(simplified_3)
+    print("\n\n\n\n\n\n")
+    print("PLAN:")
+    pprint.pprint(plan3)
+    print("\n\n\n\n\n\n")
+    print("\nSIMPLIFIED PLAN:")
+    pprint.pprint(simplified_3)
+    # print("\n\n\n\n\n\n")
+    # print("\nSIMPLIFIED PLAN JSON:")
+    # pprint.pprint(json.dumps(simplified_3, indent=4))
 
 
 if __name__ == "__main__":
