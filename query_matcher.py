@@ -87,59 +87,6 @@ def normalizePlan(plan_json:dict)->dict:
     return normalize_node(node)
 
 
-    
-# F1: Plan Simplification
-# def simplifier(plan_json: Dict[str, Any]) -> Dict[str, Any]:
-#     """
-#     Simplifies a PostgreSQL EXPLAIN (FORMAT JSON) query plan into a
-#     canonical, engine-agnostic representation.
-
-#     Canonical node format:
-#     {
-#         "op": <logical operator>,
-#         "algo": <physical algorithm>,
-#         "relation": <table name or None>,
-#         "children": [<child nodes>]
-#     }
-#     """
-
-#     # Unwrap top-level Postgres EXPLAIN JSON if present
-#     node = plan_json["Plan"] if "Plan" in plan_json else plan_json
-
-#     node_type = node.get("Node Type")
-
-#     op = None
-#     algo = None
-#     relation = None
-#     children = []
-
-#         # Step 3: map raw operator to canonical op and algo
-#     if node_type in OPERATOR_MAP:
-#         op, algo = OPERATOR_MAP[node_type]
-
-#         # Extract relation name only for scan operators
-#         if op == "Scan":
-#             relation = node.get("Relation Name")
-
-#     else:
-#         # Fallback for unsupported operators
-#         op = "Unknown"
-#         algo = node_type
-
-#     # Recursively process child plan nodes
-#     for child in node.get("Plans", []):
-#         children.append(simplifier(child))
-
-#     return {
-#         "op": op,
-#         "algo": algo,
-#         "relation": relation,
-#         "children": children
-#     }
-
-
-
-
 # F2: Plan Fingerprinting
 
 def plan_fingerprint(simplified_plan: Dict[str, Any]) -> str:
