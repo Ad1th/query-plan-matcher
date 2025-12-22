@@ -2,6 +2,7 @@ import json
 import hashlib
 import pprint
 from typing import Dict, Any
+from typing_extensions import runtime
 
 
 #Removing fields that we know is noise and differs execution to execution
@@ -91,31 +92,58 @@ def normalizePlan(plan_json:dict)->dict:
     return normalize_node(node)
 
 
-# F2: Plan Fingerprinting
-
-def plan_fingerprint(simplified_plan: Dict[str, Any]) -> str:
+def extractRuntime(plan_json:dict)->float:
     """
-    Generates a deterministic fingerprint for a canonical query plan
-    by hashing its serialized JSON representation.
+    Docstring for extractRuntime
+    
+    :param plan_json: Extracts total execution runtime (in milliseconds) from a PostgreSQL
+    EXPLAIN (ANALYZE, FORMAT JSON) output.
+    This uses the top-level 'Execution Time' field and ignores per-node timings.
+
+    We are using the original plan only, and not the normalised plan.
+    
+    :type plan_json: dict
+    :return: returns the runtime in milliseconds as a floating point number
+    :rtype: float
+    
     """
+    #first we unwrap instance if needed, else if it is one json of a plan, we continue (same as normalizePlan)
+    if isinstance(plan_json, list):
+        plan_json = plan_json[0]
+    
+    #Raising a key error if we don't find the execution time in the plan
+    if "Execution Time" not in plan_json:
+        raise KeyError("Execution Time not found in plan JSON")
+    return float(plan_json["Execution Time"])
+    
 
-    serialized = json.dumps(
-        simplified_plan,
-        sort_keys=True,
-        separators=(",", ":")
-    )
-
-    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
+# # F2: Plan Fingerprinting
+
+# def plan_fingerprint(simplified_plan: Dict[str, Any]) -> str:
+#     """
+#     Generates a deterministic fingerprint for a canonical query plan
+#     by hashing its serialized JSON representation.
+#     """
+
+#     serialized = json.dumps(
+#         simplified_plan,
+#         sort_keys=True,
+#         separators=(",", ":")
+#     )
+
+#     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-# F3: Plan Matching
-def matcher(fp1: str, fp2: str) -> bool:
-    """
-    Compares two plan fingerprints and determines equivalence.
-    """
-    return fp1 == fp2
+
+
+# # F3: Plan Matching
+# def matcher(fp1: str, fp2: str) -> bool:
+#     """
+#     Compares two plan fingerprints and determines equivalence.
+#     """
+#     return fp1 == fp2
 
 
 # Sample plan for testing
@@ -137,6 +165,11 @@ def run_menu():
     # print("\n\n\n\n\n\n")
     # print("\nSIMPLIFIED PLAN JSON:")
     # pprint.pprint(json.dumps(simplified_3, indent=4))
+
+    
+    runtime = extractRuntime(p_x["plan"])
+    print("Execution Runtime (ms):", runtime)
+
 
 
 if __name__ == "__main__":
