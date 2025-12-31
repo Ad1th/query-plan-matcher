@@ -5,6 +5,8 @@ from query_matcher import compare_all_runs
 
 
 def main():
+    # Resolve DB_Performance/ from Query_Plan_Matcher/main.py
+    # parents[0] = Query_Plan_Matcher/, parents[1] = DB_Performance/
     PROJECT_ROOT = Path(__file__).resolve().parents[1]
     EXPERIMENTS_ROOT = PROJECT_ROOT / "experiments"
 

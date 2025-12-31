@@ -25,7 +25,10 @@ def load_plan_runs(
 
     runs: List[Tuple[str, dict]] = []
 
-    for run_dir in sorted(p for p in base.iterdir() if p.is_dir()):
+    run_dirs = sorted(p for p in base.iterdir() if p.is_dir())
+    print(f"[loader] Found {len(run_dirs)} run directories in {base}")
+
+    for run_dir in run_dirs:
         plan_file = run_dir / "plan.json"
         if plan_file.exists():
             try:
