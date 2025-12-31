@@ -49,10 +49,10 @@ def main():
         else:
             ratio = float('inf') if runtime_b > 0 else 1.0
         
-        print("Runtime:")
-        print(f"  A: {runtime_a:.3f} ms")
-        print(f"  B: {runtime_b:.3f} ms")
-        print(f"  Δ: {diff_sign}{diff:.3f} ms")
+        print("Runtime: (seconds)") #update to mention it is dynamic if ms also shows up llike 2600 instead of 2.6
+        print(f"  A: {runtime_a:.3f}")
+        print(f"  B: {runtime_b:.3f}")
+        print(f"  Δ: {diff_sign}{diff:.3f}")
         print(f"  Ratio: {ratio:.3f}x")
         print()
 
