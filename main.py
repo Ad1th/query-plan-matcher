@@ -17,7 +17,7 @@ def main():
     EXPERIMENTS_ROOT = PROJECT_ROOT / "experiments"
 
     DATABASE = "postgres"
-    QUERY_ID = "TPCH_1"
+    QUERY_ID = ""
 
     print(f"Looking for experiments in: {EXPERIMENTS_ROOT}")
 
@@ -49,7 +49,7 @@ def main():
         else:
             ratio = float('inf') if runtime_b > 0 else 1.0
         
-        print("Runtime: (seconds)") #update to mention it is dynamic if ms also shows up llike 2600 instead of 2.6
+        print("Runtime: (seconds)")
         print(f"  A: {runtime_a:.3f}")
         print(f"  B: {runtime_b:.3f}")
         print(f"  Δ: {diff_sign}{diff:.3f}")

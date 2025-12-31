@@ -40,6 +40,9 @@ DENY_KEYS = {
     # misc
     "Async Capable",
     "Parent Relationship",
+
+    "Filters",
+    "filter",
 }
 
 
@@ -49,9 +52,17 @@ def normalize_plan(plan_json: dict) -> dict:
     canonical, execution-invariant tree.
     """
 
+    # Handle string input (text EXPLAIN output, not JSON format)
+    if isinstance(plan_json, str):
+        return {"_raw_text": plan_json, "_format": "text"}
+
     # unwrap EXPLAIN's list wrapper
     if isinstance(plan_json, list):
         plan_json = plan_json[0]
+
+    # Handle case where unwrapped list item is a string
+    if isinstance(plan_json, str):
+        return {"_raw_text": plan_json, "_format": "text"}
 
     # unwrap top-level Plan
     node = plan_json["Plan"] if "Plan" in plan_json else plan_json
