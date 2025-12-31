@@ -5,24 +5,25 @@ from typing import List, Tuple
 
 
 def load_plan_runs(
-    experiments_root: str,
+    experiments_root: Path | str,
     database: str,
     query_id: str,
 ) -> List[Tuple[str, dict]]:
     """
-    Load all plan.json files for a given query.
-    Returns: [(timestamp, plan_json), ...]
+    Loads:
+    experiments/<database>/<query_id>/<timestamp>/plan.json
     """
 
-    base = Path(experiments_root) / database / query_id
+    experiments_root = Path(experiments_root)
+
+    base = experiments_root / database / query_id
     if not base.exists():
         return []
 
     runs = []
-    for run_dir in sorted(base.iterdir()):
+    for run_dir in sorted(p for p in base.iterdir() if p.is_dir()):
         plan_file = run_dir / "plan.json"
         if plan_file.exists():
-            with open(plan_file) as f:
-                runs.append((run_dir.name, json.load(f)))
+            runs.append((run_dir.name, json.loads(plan_file.read_text())))
 
     return runs

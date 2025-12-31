@@ -1,12 +1,14 @@
-# main.py
-
+from pathlib import Path
 from query_matcher import compare_all_runs
 
-
 def main():
-    EXPERIMENTS_ROOT = "../query_executer/experiments"
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]
+    EXPERIMENTS_ROOT = PROJECT_ROOT / "experiments"
+
     DATABASE = "postgres"
-    QUERY_ID = "TPCH_1" 
+    QUERY_ID = "TPCH_1"
+
+    print("Looking for experiments in:", EXPERIMENTS_ROOT)
 
     results = compare_all_runs(
         experiments_root=EXPERIMENTS_ROOT,
