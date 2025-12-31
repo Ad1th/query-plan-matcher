@@ -16,6 +16,10 @@ def compare_two_runs(plan_a: dict, plan_b: dict) -> dict:
         "same_plan": matcher(fp_a, fp_b),
         "fingerprint_a": fp_a,
         "fingerprint_b": fp_b,
+        "raw_plan_a": plan_a,
+        "raw_plan_b": plan_b,
+        "normalized_plan_a": norm_a,
+        "normalized_plan_b": norm_b,
     }
 
 
@@ -28,12 +32,14 @@ def compare_all_runs(
 
     results = []
     for i in range(len(runs) - 1):
-        ts_a, plan_a = runs[i]
-        ts_b, plan_b = runs[i + 1]
+        ts_a, plan_a, metrics_a = runs[i]
+        ts_b, plan_b, metrics_b = runs[i + 1]
 
         comparison = compare_two_runs(plan_a, plan_b)
         comparison["run_a"] = ts_a
         comparison["run_b"] = ts_b
+        comparison["metrics_a"] = metrics_a
+        comparison["metrics_b"] = metrics_b
 
         results.append(comparison)
 
